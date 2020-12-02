@@ -9,6 +9,7 @@ library(knitr)
 library(learnr)
 library(metafor)
 continuous_dat <- read.csv("www/Borenstein_p88.csv")
+binary_dat     <- read.csv("www/Borenstein_p93.csv")
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
@@ -191,4 +192,59 @@ summary(continuous_RR_rma)
 
 forest(continuous_RR_rma, showweights = TRUE)
 ```
+
+## Fixed-effect meta-analysis; binary data
+### Example dataset
+Often studies will report binary data, such as ‘dead’ or ‘alive’, ‘present’ or ‘absent’ etc. in ecological and conservation surveys. These are generally analysed as ‘odds ratios’ although metafor can handle ‘risk ratios’ etc. should you wish to use them.
+
+Again these data are taken from Borenstein (page 93) so if you want to do all the calculations by hand you can see the fully-worked out examples and are stored in a dataframe called `binary_dat`
+
+```{r}
+knitr::kable(binary_dat)
+```
+
+The 'E' represent 'Events' and the 'NE' represent 'Non-events' for the Treatment (T) and Control (C), whilst n is the number of observations in the treatment or control of each study.  The odds ratio is calculated as:
+
+$$OddsRatio = \frac{TreatmentOdds}{ControlOdds}$$
+
+so for the first study, by Saint, this can be calculated as:
+
+$$OddsRatio_1 = \frac{12 \times 14}{53 \times 16} =0.6934$$
+
+Again, the calculations of effect sizes are actually done on the natural logarithm of the effect sizes, i.e. 
+
+$$logOddsRatio=ln(OddsRatio)$$
+
+so if you want to look at the odds ratio in the original units you have to back-transform via the exponential function:
+
+```{r binary_fixed_effect_sizes, exercise=TRUE}
+binary_eff <- escalc(measure="OR", ai=E_T, bi=NE_T, ci=E_C, di=NE_C,
+                     data=binary_dat)
+
+# Show the effect size in column yi in log-transformed and original units
+summary(binary_eff)
+summary(binary_eff, transf=exp)
+```
+
+The summary results are shown twice here. First the odds ratios (yi column) are by default shown in natural logarithms (ln). To display in their original units we need to anti-log them, which for natural logarithms is via exponential function. You will see the odds ratio for the Saint study displayed as 0.6934 which is the same as obtained manually.
+
+By default on binary data `metafor` uses random-effects as that gives better results and is to be preferred. However, as it is easier to compare the calculations with those you have done by hand, we will initially do a simple fixed-effect model for which we must specify that `method="FE"` as one of the options. By default for odds ratios the forest plot are shown in log scale, so back-transform (compare this plot with Fig. 14.3 of Borenstein)
+
+```{r binary_fixed-setup}
+binary_eff <- escalc(measure="OR", ai=E_T, bi=NE_T, ci=E_C, di=NE_C,
+                     data=binary_dat)
+
+```
+
+```{r binary_fixed, exercise=TRUE}
+binary_fixed_rma <- rma(yi, vi, data=binary_eff, method="FE", measure="OR")
+summary(binary_fixed_rma) # use transf=exp for original units
+
+forest(binary_fixed_rma, atransf=exp, showweights = TRUE)
+```
+
+The summary table gives the estimate of the effect size as -0.7241 which is the log odds ratio. To convert it back to the original odds ratio (OR) scale take its exponential using the `exp` function to get 0.4847
+
+## Random-effect meta-analysis; binary data
+The method is very similar for random-effects, but now use the `rma` function defaults to random-effects unless otherwise specified:
 
