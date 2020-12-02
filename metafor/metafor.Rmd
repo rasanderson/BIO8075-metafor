@@ -1,0 +1,103 @@
+---
+title: "Effect sizes and meta-analysis with metafor"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(learnr)
+library(metafor)
+continuous_dat <- read.csv("www/Borenstein_p88.csv")
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## Introduction
+In [the previous website](https://naturalandenvironmentalscience.shinyapps.io/Further_Effects/) we explored how to calculate effect sizes using R as a 'hand-calculator', and then undertake a simple fixed-effect meta-analysis using R with Hedges' _g_ as our measure of the standardised mean difference between two treatments. The disadvantage of this approach is that it is very time-consuming. Fortunately, the `metafor` package automates many of the steps, making the process much easier. Here we will go through fixed- and random-effects meta-analysis with continuous data, and display the results in forest plots. We will also consider binary (count) and correlation data.
+
+## Revision: Fixed-effects
+Recall that these data can be analysed by [either fixed- or random-effects](https://naturalandenvironmentalscience.shinyapps.io/Further_Effects/#section-fixed--vs-random-effects) meta-analysis, and the approach and philosophy differs slightly. The following diagram summarises a fixed-effect model
+
+![](www/fixed_fig_11_1_11_2.PNG){Width=75%}
+
+In the above diagram our effect size is represented by $\theta$ (Greek letter theta), with our true overall effect across all studies the triangle at the bottom. The basic assumption of a fixed-effect model is that every study would have this same true effect, as shown by the circles lined up vertically.
+
+Since all the studies have the **same** true effect, any variation that they report must be due to random error inherent in each study. If you had infinite sample sizes, they would all report the same true effect; they would be showing the population-based effect size. See [populations and samples](https://naturalandenvironmentalscience.shinyapps.io/Effectsizes/#section-populations-and-samples). This is summarised below:
+
+![](www/fixed_fig_11_1.png){Width=75%}
+
+Of course, in reality the sample size in each study is not infinite, so you get sampling variation. In the diagram below the true effect for each study (circles) is still the same, but the observed effect (squares) now varies:
+
+![](www/fixed_fig_11_2.png){Width=75%}
+
+So we can say the observed effect $Y$ for study $i$ is:
+
+$$Y_i=\theta+\epsilon_i$$
+
+At first sight, these errors shown as $\epsilon_1, \epsilon_2, \epsilon_3$ (Greek letter epsilon) for the three studies is problemmatic. However, we can estimate the **sampling distribution** around these errors, placing a normal (Gaussian or 'bell-shaped') curve around each error, based on the reported variance in the study.
+
+![](www/fixed_fig_11_3.png){Width=75%}
+
+Study 1 has a relatively small sample size, with large variance, so the observed effect could have fallen roughly between 0.20 and 1.00. In contrast, Study 3 has a large sample size, with small variance, and so the observed effect is roughly between 0.40 to 0.80. A normal curve is based on the square root of the variance.
+
+## Fixed-effect meta-analysis; continuous data
+### Example dataset
+We will use the same example that you worked on earlier, from Borenstein page 88, where you have the means, standard deviations, and numbers of replicates for two treatments (1 and 2):
+
+```{r}
+kable(continuous_dat)
+```
+
+### Fixed-effect analysis of continuous data
+The `escalc()` function can be used to calculate our effect sizes based on this continuous dataset. It can take numerous different, and different numbers of, "arguments" depending on what you are wanting to do and the data available. Here we are giving it:
+
+* `measure`. This is the effect size to calculate. "SMD" represents standardised mean differences as calculated to Hedges' _g_
+* `m1i`, `m2i`. The means for the two treatments
+* `sd1i`, `sd2i`. The standard deviations
+* `n1i`, `n2i`. The number of replicates
+* `data`. The name of the data.frame; each row is a separate study.
+
+In the code-block below, your data are called `continuous_dat`
+
+```{r fixed_effect_size, exercise=TRUE}
+continuous_eff <- escalc(measure="SMD", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+summary(continuous_eff)
+
+```
+
+In the output summary, you the column headed `yi` contains the Hedges' _g_ standardised effect sizes, and the column `vi` their within-variance. Compare these values with those you manually calcaluated before; they are the same, but you can see that it is much simpler via `metafor`. Also output are standard errors, z test statistics and the lower and upper 95% confidence intervals. Now you can complete the meta-analysis via the `rma` command. Here we provide it with four arguments:
+
+* `yi` The effect size. We are using Hedges' _g_ here, but the `rma` function always assumes that `yi` is your effect size.
+* `vi` Within-study variance
+* `data` The dataframe with the effect sizes and variances. There is nothing wrong if in the `escalc` call you decide to "overwrite" your original dataframe; it will keep all the existing columns, and add the new ones to it.
+* `method`. By default `rma` doesnot do fixed-effects models, so we have to specify it here.
+
+```{r fixed_effect_rma-setup}
+continuous_eff <- escalc(measure="SMD", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+```
+
+```{r fixed_effect_rma, exercise=TRUE}
+continuous_fixed_rma <- rma(yi, vi, data=continuous_eff, method="FE")
+summary(continuous_fixed_rma)
+
+```
+
+This shows the standardised mean difference (Hedges _g_) of 0.4150021 under the estimate heading, the same as the value of M that you manually calculated before. It also shows the standard error, the z-statistic, p-value and 95% CI. Here the meta-analysis is indicating a significant difference between the treatment and control for the reported standardised effect size.
+
+Finally, you can summarise all these results via a ‘forest plot’; we will use the `showweights` option to display them:
+
+```{r fixed_forest-setup}
+continuous_eff <- escalc(measure="SMD", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+continuous_fixed_rma <- rma(yi, vi, data=continuous_eff, method="FE")
+```
+
+```{r fixed_forest, exercise=TRUE}
+forest(continuous_fixed_rma, showweights = TRUE)
+
+```
+
+The standard output shows the effect size at the end, and the 95% CI for each study as well as for the overall fixed-effects (FE) model. By default, the forest plot merely lists the studies as ‘Study 1’, ‘Study 2’ etc., but later you will learn R commands to improve the plots.
