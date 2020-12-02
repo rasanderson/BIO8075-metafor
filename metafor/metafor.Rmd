@@ -246,5 +246,58 @@ forest(binary_fixed_rma, atransf=exp, showweights = TRUE)
 The summary table gives the estimate of the effect size as -0.7241 which is the log odds ratio. To convert it back to the original odds ratio (OR) scale take its exponential using the `exp` function to get 0.4847
 
 ## Random-effect meta-analysis; binary data
-The method is very similar for random-effects, but now use the `rma` function defaults to random-effects unless otherwise specified:
+As you have already seen, it is **much better** to do random effects meta-analysis. The method is very similar for random-effects, but now use the `rma` function defaults to random-effects unless otherwise specified:
 
+```{r binary_random-setup}
+binary_eff <- escalc(measure="OR", ai=E_T, bi=NE_T, ci=E_C, di=NE_C,
+                     data=binary_dat)
+
+```
+
+```{r binary_random, exercise=TRUE}
+binary_random_rma <- rma(yi, vi, data=binary_eff)
+
+summary(binary_random_rma)
+forest(binary_random_rma, atransf=exp, showweights = TRUE)
+
+```
+
+Compare the two forest plots for the fixed vs random effects: here you can see that by taking the random differences between the studies into account, that the effect size is slightly larger 0.56 in the RE than the 0.48 in the FE study.
+
+### Risk ratios
+You will recall that instead of odds ratios, risk ratios are also popular with binary data. In some ways they are easier to interpret. So we will complete our exploration of binary data with risk ratios.
+
+We have already looked at an example of **risk ratios** [in this website](https://naturalandenvironmentalscience.shinyapps.io/Effectsizes/#section-interactive-forest-plot-of-meta-analysis) and in ecological and conservation surveys if you are particularly interested in the risk of extinction for example, then these might be an appropriate measure.
+
+As usual when dealing with ratios, it is better to transform the ratios to natural logs to maintain symmetry, and back-transform where needed. First we can calculate the effect size, using `method="RR"`:
+
+```{r binary_risk_ratios, exercise=TRUE}
+binary_eff_riskratio <- escalc(measure="RR", ai=E_T, bi=NE_T, ci=E_C, di=NE_C,
+                     data=binary_dat)
+
+# Effect sizes in log-transformed and back-transformed units
+summary(binary_eff_riskratio)
+summary(binary_eff_riskratio, transf=exp)
+```
+
+The meta-analysis can then be performed in the usual way, where it defaults to a random-effects model.
+
+```{r binary_riskratio-setup}
+binary_eff_riskratio <- escalc(measure="RR", ai=E_T, bi=NE_T, ci=E_C, di=NE_C,
+                     data=binary_dat)
+
+```
+
+
+```{r binary_riskratio, exercise=TRUE}
+binary_riskratio_rma <- rma(yi, vi, data=binary_eff_riskratio)
+
+
+summary(binary_riskratio_rma)
+forest(binary_riskratio_rma, atransf=exp, showweights = TRUE)
+```
+
+Many ecologists find risk ratios more intuitive and easier to understand than odds ratios.
+
+### Risk differences
+We did briefly discuss these; they are available through the `method="RD"` option but are less widely used.
