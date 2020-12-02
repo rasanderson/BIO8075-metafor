@@ -10,6 +10,8 @@ library(learnr)
 library(metafor)
 continuous_dat <- read.csv("www/Borenstein_p88.csv")
 binary_dat     <- read.csv("www/Borenstein_p93.csv")
+corr_dat       <- read.csv("www/Borenstein_p98.csv")
+
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
@@ -301,3 +303,106 @@ Many ecologists find risk ratios more intuitive and easier to understand than od
 
 ### Risk differences
 We did briefly discuss these; they are available through the `method="RD"` option but are less widely used.
+
+## Fixed-effect meta-analysis; correlation data
+### Fisher's z scores
+Most ecologists are very familiar with correlation, as it is a relatively simple statistic, widely reported. The "population" correlation is usually represented by the Greek letter $\rho$ (Greek letter _rho_) whilst the "sample" correlation, that is what is actually reported in any study, is indicated via _r_.   However, in meta-analysis the correlation coefficients _r_ are usually converted to Fisher's _z_ scale (the terminology is a little confusing, as this is not the same as the _z_ values used in some statistics tests). The values are then back-converted to the original _r_ values for final presentation of the meta-analysis results. The process is shown schematically below:
+
+![](www/correl_fisher_z_fig_6_1.png){Width=75%}
+
+and Fisher's _z_ scale values can be calculated as:
+
+$$z=0.5 \times \ln\bigg(\frac{1+r}{1-r}\bigg)$$
+
+and the back-transformation to the original correlation units is:
+
+$$r=\frac{e^{2z}-1}{e^{2z}+1}$$
+
+Again we will use one of the example datasets from Borenstein, so that if you want to undertake the entire analysis by hand to gain greater insights you a free to do so. Here are the data you will analyse, stored in a dataframe `corr_dat`:
+
+```{r}
+knitr::kable(corr_dat)
+```
+
+There are six studies; Let's focus on the first study by Fonda first. To calculate Fisher's _z_ transformed value for this study, we simply need to calculate:
+
+$$z_1 = 0.5 \times \ln\bigg(\frac{1+0.50}{1-0.50}\bigg)$$
+
+which can be calculated in R; note that in R the function "`log`" is for natural logs, whereas the function "`log10`" is for logs to base-10:
+
+```{r z_value_Fonda, exercise=TRUE}
+z_Fonda <- 0.5 * log((1+corr_dat$Correlation[1])/(1-corr_dat$Correlation[1]))
+
+z_Fonda
+```
+Again it is relatively simple to calculate the values for all the studies using the `escalc` function from `metafor`. The inputs are:
+
+* `ri` The correlation coefficient in each study
+* `ni` the number of samples in the study
+* `data` The dataframe containing the correlation dataset
+* `measure` Here we define it as `"ZCOR"` to convert _r_ to Fisher's _z_ values
+
+The code below allows you to see the difference between the _z_ data, or when back-transformed in the `summary()` function using the `transf.ztor` option.
+
+```{r correlation_effect, exercise=TRUE}
+corr_eff <- escalc(ri=Correlation, ni=N, data=corr_dat, measure="ZCOR")
+
+summary(corr_eff)
+summary(corr_eff, transf=transf.ztor)
+```
+
+The two output tables are basically the same, but in the second the Fisher's _z_ scores, shown in the `yi` column, have been back-transformed to the original correlation.  However, you can see that the _z_ value for the Fonda study matches that which you calculated manually earlier.
+
+To undertake a fixed-effects analysis of the correlations, to find out whether there really is a positive (or negative) correlation across all the studies:
+
+```{r correlation_fixed-setup}
+corr_eff <- escalc(ri=Correlation, ni=N, data=corr_dat, measure="ZCOR")
+
+```
+
+```{r correlation_fixed, exercise=TRUE}
+corr_fixed_rma <- rma(yi, vi, data=corr_eff, method="FE")
+
+summary(corr_fixed_rma)
+forest(corr_fixed_rma, atransf=transf.ztor, showweights =TRUE)
+```
+
+
+## Random-effect meta-analysis; correlation data
+Remember that in random-effects analysis we are looking at both the within-study and the between study variance in the calculations. As usual the `rma` function defaults to the random-effects model so we simply need to omit the `method="FE"` option:
+
+```{r correlation_random-setup}
+corr_eff <- escalc(ri=Correlation, ni=N, data=corr_dat, measure="ZCOR")
+
+```
+
+```{r correlation_random, exercise=TRUE}
+corr_random_rma <- rma(yi, vi, data=corr_eff)
+
+summary(corr_random_rma)
+forest(corr_random_rma, atransf=transf.ztor, showweights=TRUE)
+
+```
+
+Again, you will probably find the random-effects model is more appropriate for most of the studies that you are likely to encounter in ecology and conservation.
+
+
+## Checking the quality of your models
+A simple method to check that your meta-analysis models have met the underlying assumptions (e.g. whether a random-effects model is appropriate etc.) is to plot the results of the model as a quantile-quantile or "QQ" plot. If you need a reminder of QQ plots, [see this web-page where QQ plots are described](https://naturalandenvironmentalscience.shinyapps.io/linear_explan/#section-checking-model-assumptions). In essence, these rank the standardised residuals from your models and plot them against those that would have been expected if all the assumptions had been met.  The closer the points are to a straight line, within the error bars, the better the model.  Let's plot the fixed- and random- effects QQ plots for the continuous data meta-analyses:
+
+```{r qqnorm_plots-setup}
+continuous_eff <- escalc(measure="SMD", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+continuous_fixed_rma <- rma(yi, vi, data=continuous_eff, method="FE")
+continuous_random_rma <- rma(yi, vi, data=continuous_eff)
+
+```
+
+
+```{r qqnorm_plots, exercise=TRUE}
+qqnorm(continuous_fixed_rma, main="Fixed normal QQ plot")
+qqnorm(continuous_random_rma, main="Random normal QQ plot")
+```
+
+You can see that more of the points for the random-effects model are within the 95% confidence intervals which therefore looks a better model. Go back to previous pages on the website to create similar plots for the binary and correlation data to see whether the fixed- or random-effects approaches look better.
+
