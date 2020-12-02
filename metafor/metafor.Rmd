@@ -151,3 +151,44 @@ forest(continuous_random_rma, showweights = TRUE)
 ```
 
 Note how the weighting for Study 4 has gone down compared to the fixed-effect model. It has been downweighted as its reported effect size was so different from all the other studies.
+
+### Response ratio
+You may recall that another common effect size when you have continuous quantitative variables as your response are **response ratios**. See [this interactive website](https://naturalandenvironmentalscience.shinyapps.io/Further_Effects/#section-effect-sizes-for-continuous-data) for a reminder. It is basically the ratio of the two means, but log-transformed to maintain symmetry:
+
+$$ln(RR)=\frac{\bar{X_1}}{\bar{X_2}}$$
+
+You can calculate response ratios, column `yi`, using the `method="ROM"` option, standing for 'ratio of means' to `escalc()`.
+
+```{r random_effect_RR, exercise=TRUE}
+continuous_eff_RR <- escalc(measure="ROM", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+
+summary(continuous_eff_RR)
+```
+
+The `escalc` function automatically applies a natural logarithm transformation, so if you want to see the effect size data (column `yi`) in the original units you need to back-transform via the exponential:
+
+```{r random_effect_RR_exp, exercise=TRUE}
+continuous_eff_RR <- escalc(measure="ROM", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+
+summary(continuous_eff_RR, transf=exp)
+```
+
+The log units are actually used in the meta-analysis, and are displayed by default unless specified. The log-transformed ones displayed in the forest plot:
+
+```{r random_effect_RR_rma-setup}
+continuous_eff_RR <- escalc(measure="ROM", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+```
+
+```{r random_effect_RR_rma, exercise=TRUE}
+continuous_RR_rma <- rma(yi, vi, data=continuous_eff_RR)
+summary(continuous_RR_rma)
+
+# If you want overall meta-analysis effect displayed in original units
+# summary(continuous_RR_rma, transf=exp)
+
+forest(continuous_RR_rma, showweights = TRUE)
+```
+
