@@ -19,7 +19,7 @@ In [the previous website](https://naturalandenvironmentalscience.shinyapps.io/Fu
 ## Revision: Fixed-effects
 Recall that these data can be analysed by [either fixed- or random-effects](https://naturalandenvironmentalscience.shinyapps.io/Further_Effects/#section-fixed--vs-random-effects) meta-analysis, and the approach and philosophy differs slightly. The following diagram summarises a fixed-effect model
 
-![](www/fixed_fig_11_1_11_2.PNG){Width=75%}
+![](www/fixed_fig_11_1_11_2.png){Width=75%}
 
 In the above diagram our effect size is represented by $\theta$ (Greek letter theta), with our true overall effect across all studies the triangle at the bottom. The basic assumption of a fixed-effect model is that every study would have this same true effect, as shown by the circles lined up vertically.
 
@@ -101,3 +101,53 @@ forest(continuous_fixed_rma, showweights = TRUE)
 ```
 
 The standard output shows the effect size at the end, and the 95% CI for each study as well as for the overall fixed-effects (FE) model. By default, the forest plot merely lists the studies as ‘Study 1’, ‘Study 2’ etc., but later you will learn R commands to improve the plots.
+
+## Revision: Random-effects
+One problem with the fixed-effect method is that it assumes that all the studies are identical, and that the real effect size is the same in all the studies. Of course in reality this is unlikely to be true. The underlying effect sizes are likely to differ. So our underlying true effects will differ for each study, forming a bell-shaped curve around our overall true effect across all studies:
+
+![](www/rand_effect_fig_12_1.png){Width=75%}
+
+In the above diagram $\mu$ (Greek letter mu) effect size, and the triangle represents the overall true effect across all studies. The actual true effect at three studies within this bell-shaped curve are represented by circles.
+
+For example, survival of an endangered mammal population as a result of a management intervention may partly depend on the age of the mammals in the different populations in each of the different studies, as well as the actual management intervention. The diagram below shows the true effect sizes (0.55, 0.65 and 0.50) in three studies, assuming no observation error whatsoever, $\delta_1$, $\delta_2$ and $\delta_3$. The curve represents the normal distribution around all true effects.
+
+![](www/rand_effect_fig_12_2.png){Width=75%}
+
+Of course in reality, there is observation error, so for our third study there is both the sampling error, shown as $\epsilon_3$ below which is the difference of what was observed, $Y_3$ and the true effect size $\delta_3$ in that study. The study effect size differs from the overall effect size for all studies by $\zeta_3$ as shown below:
+
+![](www/rand_effect_fig_12_3.png){Width=75%}
+
+So, we can say that the observed effect $Y_i$ for any study is given by the grand mean $\mu$ (Greek letter _mu_), the deviation of the study's true effect from the grand mean $\zeta_i$ (Greek letter _zeta_), and the sampling error in that study $\epsilon_i$ (Greek letter _epsilon_):
+
+$$Y_i = \mu + \zeta_i + \epsilon_i$$
+This equation covers both within-study variation $\epsilon_i$ and between-study variation $\zeta_i$. Hopefully you can see that **random-effects models are generally preferred** over fixed-effects models in meta-analysis as they give a more realistic reflection of the processes actually taking place.
+
+## Random-effect meta-analysis; continuous data
+The `metafor` package defaults to random models when possible, as they are usually more robust for the reasons explained above. Repeating our analysis as before. There is no difference in the calculation of the effect sizes, so we can use the ones from earlier:
+
+```{r continuous_random_rma-setup}
+continuous_eff <- escalc(measure="SMD", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+```
+
+```{r continuous_random_rma, exercise=TRUE}
+continuous_random_rma <- rma(yi, vi, data=continuous_eff)
+summary(continuous_random_rma)
+
+```
+
+Notice that our estimate of the standardised effect size, 0.3606525 is smaller than that obtained via the fixed-effect model of 0.4150021, but is still significant. Again we can produce a forest plot to summarise your findings:
+
+```{r random_forest-setup}
+continuous_eff <- escalc(measure="SMD", m1i=T_mean, sd1i=T_SD, n1i=T_n,
+                         m2i=C_mean, sd2i=C_SD, n2i=C_n, data=continuous_dat)
+continuous_random_rma <- rma(yi, vi, data=continuous_eff)
+
+```
+
+```{r random_forest, exercise=TRUE}
+forest(continuous_random_rma, showweights = TRUE)
+
+```
+
+Note how the weighting for Study 4 has gone down compared to the fixed-effect model. It has been downweighted as its reported effect size was so different from all the other studies.
