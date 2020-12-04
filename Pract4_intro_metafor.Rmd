@@ -45,12 +45,14 @@ remotes::install_github("wviechtb/metafor")
 library(metafor)
 ```
 
-The main overall aims of this practical are to remind you of fixed- and random-effects models, and repeat some of the calculations basic fixed-effects and meta-analyses that you did manually in Practical 3 using `metafor`. We will expand this to binary and correlation data, and explore how to test the quality of your meta-analysis models in terms of the underlying assumptions. Specific objectives are to:
+The main overall aims of this practical are to remind you of fixed- and random-effects models, and repeat some of the calculations basic fixed-effects and meta-analyses that you did manually in Practical 3 using `metafor`. We will expand this to binary and correlation data, and explore how to test the quality of your meta-analysis models in terms of the underlying assumptions. Specific objectives are to learn:
 
 1. Meta-analysis of continuous data
 2. Meta-analysis of count or binary data
 3. Meta-analysis of correlation data
 4. Test model assumptions
+5. Check for publication bias
+6. Demonstrate improved forest plots
 
 There are three datasets to download from Canvas, all CSV format files. You will probably find it easiest to save them in the same folder as your R script, or a sub-folder called `Data`.
 
@@ -364,10 +366,10 @@ qqnorm(continuous_random_rma, main="Random normal QQ plot")
 
 You can see that more of the points for the random-effects model are within the 95% confidence intervals which therefore looks a better model. Create similar plots for your meta-analyses of binary and correlation data to see whether the fixed- or random-effects approaches look better.
 
-# 5. Detecting publication bias
+# 5. Funnel plots to detect publication bias
 Funnel plots can sometimes be useful to indicate any bias in the publications, typically on the basis of sample size. Funnel plots have an x-axis of effect size, and a y-axis of standard error, but the latter is reversed, so that **larger studies** with smaller SE tend to be found near the **top of the plot**, and **smaller studies** with larger SE’s at the **bottom of the plot**. There is a vertical line indicating the overall effect size on the plot.
 
-If there is no publication bias, then the pattern of scattered points representing the effect size should be similar at the top of the plot (big studies) as at the bottom (small studies). However, often scientists are guilty of a “bottom-drawer” effect, in which small studies with results that do not accord with other scientific literature are not published, but remain hidden in the bottom drawer of the filing cabinet. This results in the scatter of points at the bottom of the funnel plot looking quite different to the top.
+If there is no publication bias, then the pattern of scattered points representing the effect size should be similar at the top of the plot (big studies) as at the bottom (small studies). However, often scientists are guilty of a “filing cabinet” effect, in which small studies with results that do not accord with other scientific literature are not published, but remain hidden in the bottom drawer of the filing cabinet. This results in the scatter of points at the bottom of the funnel plot looking quite different to the top.
 
 It is easy to use `metafor` to create funnel plots. They are most useful **when there are a large number of studies** to select for the meta-analysis, so we will use one of the in-built datasets in the `metafor` package, called `dat.hackshaw1998`, run a fixed-effect model, and create the funnel plot. This is a dataset on the effects of passive smoking on lung cancer, which is described in full in Borenstein Chapter 30 on publication bias.
 
@@ -403,6 +405,26 @@ You can see that it has estimated that there are about 7 missing studies missing
 ```{r}
 funnel(hackshaw_trimfill)
 ```
+
+Finally, sometimes it is useful to extend the funnel plot, to show the 90%, 95% and 99% regions on the graph. Using the `refline` option the vertical line is now centred on 0 (no effect) rather than the observed effect-size. Studies in white are at P > 0.10, studies in gray are at P 0.10 to 0.05, and studies in the dark gray at P 0.05 to 0.01. Studies outside the funnel are at P < 0.01.
+
+```{r}
+funnel(hackshaw_trimfill, level=c(90, 95, 99),
+       shade=c("white", "gray", "darkgray"),
+       refline=0)
+```
+
+# 6. Improved forest plots
+Finally, let's look at a minor change to your forest plots. It is a bit frustrating that the default forest plots merely label the studies as 'Study 1', 'Study 2' etc. and it would be better if they included the actual study names. This is relatively easy to add, by simply using the `slab` option for the forest plot, and the `text()` function to add text annotation:
+
+```{r}
+forest(continuous_random_rma, showweights = TRUE, slab=continuous_dat$Study)
+text(x = -2.5, y = 8, "Author(s)", pos = 4)
+text(x = 1,    y = 8, "Weight", pos=4)
+text(x = 2,    y = 8, "SMD [95% CI]", pos=4)
+```
+
+There are numerous other ways of smartening up the graphics. Have a look at [this page on the metafor site](http://www.metafor-project.org/doku.php/plots) for some of the options available.
 
 # Summary
 Hopefully you now have a good understanding of how to do a meta-analysis of three common types of data you are likely to see reported in published peer-reviewed papers.  You can also download an Excel worksheet with all the calculations set out for you from the Borenstein book website at <https://www.meta-analysis.com/downloads/Introduction%20to%20Meta-Analysis%20Data%20files%20Chapters%2014%20and%2018.xls>.
