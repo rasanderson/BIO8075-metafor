@@ -395,10 +395,10 @@ This is very easy to do in `metafor` using the `trimfill()` function on your met
 hackshaw_trimfill <- trimfill(hackshaw_rma)
 hackshaw_trimfill
 
-predict(hackshaw_trimfill, transf=exp)
+predict(hackshaw_trimfill, transf=exp)$pred
 ```
 
-You can see that it has estimated that there are about 7 missing studies missing from the left side of your funnel plot. Luckily, these would have negligble impact on the overall effect size, of `r predict(hackshaw_trimfill, transf=exp, digits=2)[1]` compared to `r predict(hackshaw_rma, transf=exp, digits=2)[1]` originally. You can display the "trim and fill" funnel plot, to show you where the missing studies should be.
+You can see that it has estimated that there are about 7 missing studies missing from the left side of your funnel plot. Luckily, these would have negligble impact on the overall effect size, of `r round(predict(hackshaw_trimfill, transf=exp)$pred, 2)` compared to `r round(predict(hackshaw_rma, transf=exp)$pred, 2)` originally. You can display the "trim and fill" funnel plot, to show you where the missing studies should be.
 
 ```{r}
 funnel(hackshaw_trimfill)
